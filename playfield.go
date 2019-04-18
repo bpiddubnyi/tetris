@@ -13,8 +13,7 @@ const (
 	playfieldVisibleHeight   = playfieldHeight - invisiblePlayfieldHeight
 	invisiblePlayfieldHeight = 3
 
-	moveCooldown  = time.Millisecond * 150
-	gravityPeriod = time.Millisecond * 150
+	tick = time.Millisecond * 100
 )
 
 const (
@@ -43,7 +42,7 @@ type playfield struct {
 func newPlayfield(p position) playfield {
 	return playfield{
 		pos:   p,
-		speed: 1,
+		speed: 2,
 		tet:   newRandomTet(),
 	}
 }
@@ -97,7 +96,7 @@ func (p *playfield) rotateTet() bool {
 }
 
 func (p *playfield) update() {
-	if time.Since(p.latestMove) >= moveCooldown {
+	if time.Since(p.latestMove) >= tick {
 		keys := sdl.GetKeyboardState()
 		if keys[sdl.SCANCODE_UP] == 1 {
 			p.rotateTet()
@@ -122,7 +121,7 @@ func (p *playfield) update() {
 		}
 	}
 
-	if time.Since(p.latestFall) >= time.Duration(float32(gravityPeriod)*p.speed) {
+	if time.Since(p.latestFall) >= time.Duration(float32(tick)*p.speed) {
 		if !p.moveTet(dirDown) {
 			p.mergeTet()
 			p.tet = newRandomTet()
