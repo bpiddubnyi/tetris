@@ -41,12 +41,14 @@ type game struct {
 	latestMove time.Time
 	latestFall time.Time
 	speed      float32
+	play       bool
 }
 
 func newGame() game {
 	return game{
 		speed: 2,
 		t:     newT(),
+		play:  true,
 	}
 }
 
@@ -149,28 +151,39 @@ func (g *game) mergeTet() {
 	}
 }
 
-func (g *game) update() {
-	if time.Since(g.latestMove) >= tick {
-		keys := sdl.GetKeyboardState()
-		if keys[sdl.SCANCODE_UP] == 1 {
-			g.rotateTet()
-			g.latestMove = time.Now()
+func (g *game) update(kbd *kbd) {
+	kbd.poll()
+
+	if kbd.justPressed(sdl.SCANCODE_ESCAPE) {
+		g.play = !g.play
+	}
+
+	if !g.play {
+		return
+	}
+
+	if kbd.justPressed(sdl.SCANCODE_UP) {
+		g.rotateTet()
+		g.latestMove = time.Now()
+	}
+
+	if kbd.justPressed(sdl.SCANCODE_SPACE) {
+		for g.moveTet(dirDown) {
 		}
-		if keys[sdl.SCANCODE_LEFT] == 1 {
+		g.latestMove = time.Now()
+	}
+
+	if time.Since(g.latestMove) >= tick {
+		if kbd.pressed(sdl.SCANCODE_LEFT) {
 			g.moveTet(dirLeft)
 			g.latestMove = time.Now()
 		}
-		if keys[sdl.SCANCODE_RIGHT] == 1 {
+		if kbd.pressed(sdl.SCANCODE_RIGHT) {
 			g.moveTet(dirRight)
 			g.latestMove = time.Now()
 		}
-		if keys[sdl.SCANCODE_DOWN] == 1 {
+		if kbd.pressed(sdl.SCANCODE_DOWN) {
 			g.moveTet(dirDown)
-			g.latestMove = time.Now()
-		}
-		if keys[sdl.SCANCODE_SPACE] == 1 {
-			for g.moveTet(dirDown) {
-			}
 			g.latestMove = time.Now()
 		}
 	}
