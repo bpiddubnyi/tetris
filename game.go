@@ -3,12 +3,11 @@ package main
 import (
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
 const (
-	playfieldHeight          = 24
+	playfieldHeight          = 26
 	playfieldWidth           = 10
 	playfieldVisibleHeight   = playfieldHeight - invisiblePlayfieldHeight
 	invisiblePlayfieldHeight = 3
@@ -27,31 +26,31 @@ type position struct {
 }
 
 type game struct {
-	playfield  [playfieldHeight][playfieldWidth]*sdl.Texture
-	pos        position
+	playfield  [playfieldHeight][playfieldWidth]int8
 	tet        *tetrimino
+	tetPos     position
+	tetRot     int8
 	latestMove time.Time
 	latestFall time.Time
 	speed      float32
 }
 
-func newGame(p position) game {
+func newGame() game {
 	return game{
-		pos:   p,
 		speed: 2,
-		tet:   newRandomTet(),
+		tet:   newRandomTetrimino(),
 	}
 }
 
 func (g *game) tetMoveIsPossible(pos position, rot int8) bool {
-	shape := g.tet.shapes[rot]
+	shape := g.tet[rot]
 	for i := 0; i < len(shape); i++ {
 		for j := 0; j < len(shape[i]); j++ {
-			if shape[i][j] == 1 && (int(pos.y)+i < 0 ||
+			if shape[i][j] > 0 && (int(pos.y)+i < 0 ||
 				int(pos.y)+i >= playfieldHeight ||
 				int(pos.x)+j < 0 ||
 				int(pos.x)+j >= playfieldWidth ||
-				g.playfield[int(pos.y)+i][int(pos.x)+j] != nil) {
+				g.playfield[int(pos.y)+i][int(pos.x)+j] > 0) {
 				return false
 			}
 		}
@@ -62,16 +61,16 @@ func (g *game) tetMoveIsPossible(pos position, rot int8) bool {
 func (g *game) moveTet(dir int) bool {
 	switch dir {
 	case dirLeft:
-		if g.tetMoveIsPossible(position{x: g.tet.pos.x - 1, y: g.tet.pos.y}, g.tet.rotation) {
-			g.tet.pos.x--
+		if g.tetMoveIsPossible(position{x: g.tetPos.x - 1, y: g.tetPos.y}, g.tetRot) {
+			g.tetPos.x--
 		}
 	case dirRight:
-		if g.tetMoveIsPossible(position{x: g.tet.pos.x + 1, y: g.tet.pos.y}, g.tet.rotation) {
-			g.tet.pos.x++
+		if g.tetMoveIsPossible(position{x: g.tetPos.x + 1, y: g.tetPos.y}, g.tetRot) {
+			g.tetPos.x++
 		}
 	case dirDown:
-		if g.tetMoveIsPossible(position{x: g.tet.pos.x, y: g.tet.pos.y + 1}, g.tet.rotation) {
-			g.tet.pos.y++
+		if g.tetMoveIsPossible(position{x: g.tetPos.x, y: g.tetPos.y + 1}, g.tetRot) {
+			g.tetPos.y++
 		} else {
 			return false
 		}
@@ -80,15 +79,66 @@ func (g *game) moveTet(dir int) bool {
 }
 
 func (g *game) rotateTet() bool {
-	nR := g.tet.rotation + 1
+	nR := g.tetRot + 1
 	if nR == 4 {
 		nR = 0
 	}
-	if g.tetMoveIsPossible(g.tet.pos, nR) {
-		g.tet.rotation = nR
+	if g.tetMoveIsPossible(g.tetPos, nR) {
+		g.tetRot = nR
 		return true
 	}
 	return false
+}
+
+func (g *game) moveLinesDown(start, num int) {
+	copy(g.playfield[num:start+1], g.playfield[0:start-num+1])
+	for i := 0; i < num; i++ {
+		for j := 0; j < len(g.playfield[i]); j++ {
+			g.playfield[i][j] = 0
+		}
+	}
+}
+
+func (g *game) clearLines() {
+	startLine := 0
+	lines := 0
+	// Scan from the bottom
+lineLoop:
+	for i := len(g.playfield) - 1; i >= 0; i-- {
+		for j := 0; j < len(g.playfield[i]); j++ {
+			if g.playfield[i][j] == 0 {
+				// This line is not complete
+				if lines > 0 {
+					g.moveLinesDown(startLine, lines)
+					startLine, lines = 0, 0
+				}
+				continue lineLoop
+			}
+			if j+1 == len(g.playfield[i]) {
+				// This is the last block in the line and it's not empty
+				// the line is complete
+				if lines == 0 {
+					startLine = i
+				}
+				lines++
+			}
+		}
+	}
+	if lines > 0 {
+		g.moveLinesDown(startLine, lines)
+		startLine, lines = 0, 0
+	}
+}
+
+func (g *game) mergeTet() {
+	shape := g.tet[g.tetRot]
+	for i := 0; i < len(shape); i++ {
+		for j := 0; j < len(shape[i]); j++ {
+			if shape[i][j] > 0 {
+				g.playfield[int(g.tetPos.y)+i][int(g.tetPos.x)+j] = shape[i][j]
+			}
+		}
+	}
 }
 
 func (g *game) update() {
@@ -121,108 +171,40 @@ func (g *game) update() {
 		if !g.moveTet(dirDown) {
 			g.mergeTet()
 			g.clearLines()
-			g.tet = newRandomTet()
+			g.tet = newRandomTetrimino()
+			g.tetPos = position{x: 0, y: 0}
+			g.tetRot = 0
 		}
 		g.latestFall = time.Now()
 	}
 }
 
-func (g *game) moveLinesDown(start, num int) {
-	copy(g.playfield[num:start+1], g.playfield[0:start-num+1])
-	for i := 0; i < num; i++ {
-		for j := 0; j < len(g.playfield[i]); j++ {
-			g.playfield[i][j] = nil
-		}
-	}
-}
-
-func (g *game) clearLines() {
-	startLine := 0
-	lines := 0
-	// Scan from the bottom
-lineLoop:
-	for i := len(g.playfield) - 1; i >= 0; i-- {
-		for j := 0; j < len(g.playfield[i]); j++ {
-			if g.playfield[i][j] == nil {
-				// This line is not complete
-				if lines > 0 {
-					g.moveLinesDown(startLine, lines)
-					startLine, lines = 0, 0
-				}
-				continue lineLoop
-			}
-			if j+1 == len(g.playfield[i]) {
-				// This is the last block in the line and it's not empty
-				// the line is complete
-				if lines == 0 {
-					startLine = i
-				}
-				lines++
-			}
-		}
-	}
-	if lines > 0 {
-		g.moveLinesDown(startLine, lines)
-		startLine, lines = 0, 0
-	}
-}
-
-func (g *game) mergeTet() {
-	shape := g.tet.shapes[g.tet.rotation]
-	for i := 0; i < len(shape); i++ {
-		for j := 0; j < len(shape[i]); j++ {
-			if shape[i][j] == 1 {
-				g.playfield[int(g.tet.pos.y)+i][int(g.tet.pos.x)+j] = g.tet.tex
-			}
-		}
-	}
-}
-
-func (g *game) draw(r *sdl.Renderer) {
-	// Draw background
-	back := getTex("white.png")
-	_, _, tW, tH, err := back.Query()
-	if err != nil {
-		panic(errors.Wrap(err, "failed to query texture properties"))
-	}
-	if err = r.SetDrawColor(255, 255, 255, 255); err != nil {
-		panic(errors.Wrap(err, "failed to set draw color"))
-	}
-	r.FillRect(&sdl.Rect{
-		X: g.pos.x,
-		Y: g.pos.y,
-		W: tW * playfieldWidth,
-		H: tH * playfieldVisibleHeight,
-	})
-
+func (g *game) draw(r *sdl.Renderer, p position, res *resources) {
 	// Draw playfield
 	// Start from the first visible row
 	for i := invisiblePlayfieldHeight; i < playfieldHeight; i++ {
 		for j := 0; j < playfieldWidth; j++ {
-			var t *sdl.Texture
-			shape := g.tet.shape()
-			if g.playfield[i][j] != nil {
+			var t int8
+			shape := g.tet[g.tetRot]
+			if g.playfield[i][j] > 0 {
 				// Draw  block from the matrix
 				t = g.playfield[i][j]
-			} else if j >= int(g.tet.pos.x) &&
-				j < int(g.tet.pos.x)+len(shape[0]) &&
-				i >= int(g.tet.pos.y) &&
-				i < int(g.tet.pos.y)+len(shape) &&
-				shape[i-int(g.tet.pos.y)][j-int(g.tet.pos.x)] == 1 {
+			} else if j >= int(g.tetPos.x) &&
+				j < int(g.tetPos.x)+len(shape[0]) &&
+				i >= int(g.tetPos.y) &&
+				i < int(g.tetPos.y)+len(shape) &&
+				shape[i-int(g.tetPos.y)][j-int(g.tetPos.x)] > 0 {
 				// or from the mapped player's tetrimino
-				t = g.tet.tex
-			} else {
-				t = back
+				t = shape[i-int(g.tetPos.y)][j-int(g.tetPos.x)]
 			}
-			if t != nil {
-				r.Copy(t,
-					&sdl.Rect{X: 0, Y: 0, W: tW, H: tH},
-					&sdl.Rect{
-						X: g.pos.x + int32(j)*tW,
-						Y: g.pos.y + int32(i-invisiblePlayfieldHeight)*tH,
-						W: tW, H: tH,
-					})
-			}
+
+			r.Copy(res.tex[t],
+				&sdl.Rect{X: 0, Y: 0, W: res.tW, H: res.tH},
+				&sdl.Rect{
+					X: p.x + int32(j)*res.tW,
+					Y: p.y + int32(i-invisiblePlayfieldHeight)*res.tH,
+					W: res.tW, H: res.tH,
+				})
 		}
 	}
 }

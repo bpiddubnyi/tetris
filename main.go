@@ -1,12 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"path"
 	"time"
 
-	"github.com/veandco/go-sdl2/img"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -45,22 +42,11 @@ func main() {
 		log.Fatalln("error: failed to set scale:", err)
 	}
 
-	preloadTex(rndr,
-		"white.png",
-		"blue.png",
-		"cyan.png",
-		"green.png",
-		"magenta.png",
-		"orange.png",
-		"red.png",
-		"yellow.png",
-	)
-	defer destroyPreloadedTex()
-
-	blue := getTex("blue.png")
-	defer blue.Destroy()
-
-	game := newGame(position{x: 30, y: 30})
+	res, err := loadGameResources(rndr)
+	if err != nil {
+		log.Fatalf("error: failed to load game resources: %s", err)
+	}
+	game := newGame()
 
 theLoop:
 	for {
@@ -77,7 +63,7 @@ theLoop:
 		rndr.Clear()
 
 		game.update()
-		game.draw(rndr)
+		game.draw(rndr, position{x: 20, y: 30}, res)
 
 		// Reduce CPU usage
 		if time.Since(lastFrame) < time.Second/targetFPS {
@@ -87,37 +73,4 @@ theLoop:
 		rndr.Present()
 		lastFrame = time.Now()
 	}
-}
-
-func assetPath(name string) string {
-	return path.Join(assetDir, name)
-}
-
-func textureFromFile(rndr *sdl.Renderer, name string) *sdl.Texture {
-	p := assetPath(name)
-	t, err := img.LoadTexture(rndr, p)
-	if err != nil {
-		panic(fmt.Errorf("error: failed to load texture from %s: %v", p, err))
-	}
-	return t
-}
-
-func preloadTex(rndr *sdl.Renderer, names ...string) {
-	if texStor == nil {
-		texStor = map[string]*sdl.Texture{}
-	}
-	for _, f := range names {
-		texStor[f] = textureFromFile(rndr, f)
-	}
-}
-
-func destroyPreloadedTex() {
-	for k, v := range texStor {
-		v.Destroy()
-		delete(texStor, k)
-	}
-}
-
-func getTex(name string) *sdl.Texture {
-	return texStor[name]
 }
