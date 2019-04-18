@@ -60,7 +60,7 @@ func main() {
 	blue := getTex("blue.png")
 	defer blue.Destroy()
 
-	pf := newPlayfield(position{x: 30, y: 30})
+	game := newGame(position{x: 30, y: 30})
 
 theLoop:
 	for {
@@ -76,8 +76,8 @@ theLoop:
 		}
 		rndr.Clear()
 
-		pf.update()
-		pf.draw(rndr)
+		game.update()
+		game.draw(rndr)
 
 		// Reduce CPU usage
 		if time.Since(lastFrame) < time.Second/targetFPS {

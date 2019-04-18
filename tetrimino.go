@@ -212,11 +212,11 @@ func (r *tetrimino) rotate() {
 	}
 }
 
-func (r tetrimino) currentShape() shape {
+func (r tetrimino) shape() shape {
 	return r.shapes[r.rotation]
 }
 
-func newTetrimino(t int) *tetrimino {
+func newTet(t int) *tetrimino {
 	return &tetrimino{
 		tex:      getTex(tetTextures[t]),
 		shapes:   &tetShapes[t],
@@ -225,5 +225,5 @@ func newTetrimino(t int) *tetrimino {
 }
 
 func newRandomTet() *tetrimino {
-	return newTetrimino(rand.Intn(len(tetShapes)))
+	return newTet(rand.Intn(len(tetShapes)))
 }
