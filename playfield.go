@@ -183,12 +183,13 @@ func (p *playfield) mergeTet() {
 }
 
 func (p *playfield) draw(r *sdl.Renderer) {
-	// Draw background, any Tet texture would do to calculate the size
-	_, _, tW, tH, err := getTex("blue.png").Query()
+	// Draw background
+	back := getTex("white.png")
+	_, _, tW, tH, err := back.Query()
 	if err != nil {
 		panic(errors.Wrap(err, "failed to query texture properties"))
 	}
-	if err = r.SetDrawColor(0, 0, 0, 255); err != nil {
+	if err = r.SetDrawColor(255, 255, 255, 255); err != nil {
 		panic(errors.Wrap(err, "failed to set draw color"))
 	}
 	r.FillRect(&sdl.Rect{
@@ -213,6 +214,8 @@ func (p *playfield) draw(r *sdl.Renderer) {
 				p.tet.currentShape()[i-int(p.tet.pos.y)][j-int(p.tet.pos.x)] == 1 {
 				// or from the mapped player's tetrimino
 				t = p.tet.tex
+			} else {
+				t = back
 			}
 			if t != nil {
 				r.Copy(t,

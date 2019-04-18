@@ -41,11 +41,12 @@ func main() {
 	}
 	defer rndr.Destroy()
 
-	if err = rndr.SetScale(2, 2); err != nil {
+	if err = rndr.SetScale(1, 1); err != nil {
 		log.Fatalln("error: failed to set scale:", err)
 	}
 
 	preloadTex(rndr,
+		"white.png",
 		"blue.png",
 		"cyan.png",
 		"green.png",
@@ -59,7 +60,7 @@ func main() {
 	blue := getTex("blue.png")
 	defer blue.Destroy()
 
-	pf := newPlayfield(position{x: 7, y: 30})
+	pf := newPlayfield(position{x: 30, y: 30})
 
 theLoop:
 	for {
@@ -70,7 +71,7 @@ theLoop:
 			}
 		}
 
-		if err = rndr.SetDrawColor(255, 255, 255, 255); err != nil {
+		if err = rndr.SetDrawColor(0, 0, 0, 255); err != nil {
 			log.Fatalln("error: failed to set draw color:", err)
 		}
 		rndr.Clear()
