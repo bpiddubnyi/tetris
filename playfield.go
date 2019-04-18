@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"time"
 
 	"github.com/pkg/errors"
@@ -12,9 +11,10 @@ const (
 	playfieldHeight          = 24
 	playfieldWidth           = 10
 	playfieldVisibleHeight   = playfieldHeight - invisiblePlayfieldHeight
-	invisiblePlayfieldHeight = 4
+	invisiblePlayfieldHeight = 3
 
-	moveCooldown = time.Millisecond * 150
+	moveCooldown  = time.Millisecond * 150
+	gravityPeriod = time.Millisecond * 150
 )
 
 const (
@@ -36,6 +36,16 @@ type playfield struct {
 	pos        position
 	tet        *tetrimino
 	latestMove time.Time
+	latestFall time.Time
+	speed      float32
+}
+
+func newPlayfield(p position) playfield {
+	return playfield{
+		pos:   p,
+		speed: 1,
+		tet:   newRandomTet(),
+	}
 }
 
 func (p *playfield) tetMoveIsPossible(pos position, rot int8) bool {
@@ -67,9 +77,10 @@ func (p *playfield) moveTet(dir int) bool {
 	case dirDown:
 		if p.tetMoveIsPossible(position{x: p.tet.pos.x, y: p.tet.pos.y + 1}, p.tet.rotation) {
 			p.tet.pos.y++
+		} else {
+			return false
 		}
 	}
-	log.Println("tet x:", p.tet.pos.x, "y:", p.tet.pos.y)
 	return true
 }
 
@@ -88,7 +99,7 @@ func (p *playfield) rotateTet() bool {
 func (p *playfield) update() {
 	if time.Since(p.latestMove) >= moveCooldown {
 		keys := sdl.GetKeyboardState()
-		if keys[sdl.SCANCODE_SPACE] == 1 || keys[sdl.SCANCODE_UP] == 1 {
+		if keys[sdl.SCANCODE_UP] == 1 {
 			p.rotateTet()
 			p.latestMove = time.Now()
 		}
@@ -104,11 +115,76 @@ func (p *playfield) update() {
 			p.moveTet(dirDown)
 			p.latestMove = time.Now()
 		}
+		if keys[sdl.SCANCODE_SPACE] == 1 {
+			for p.moveTet(dirDown) {
+			}
+			p.latestMove = time.Now()
+		}
+	}
+
+	if time.Since(p.latestFall) >= time.Duration(float32(gravityPeriod)*p.speed) {
+		if !p.moveTet(dirDown) {
+			p.mergeTet()
+			p.tet = newRandomTet()
+			p.clearLines()
+		}
+		p.latestFall = time.Now()
+	}
+}
+
+func (p *playfield) moveLinesDown(start, num int) {
+	copy(p.matrix[num:start+1], p.matrix[0:start-num+1])
+	for i := 0; i < num; i++ {
+		for j := 0; j < len(p.matrix[i]); j++ {
+			p.matrix[i][j].tex = nil
+		}
+	}
+}
+
+func (p *playfield) clearLines() {
+	startLine := 0
+	lines := 0
+	// Scan from the bottom
+lineLoop:
+	for i := len(p.matrix) - 1; i >= 0; i-- {
+		for j := 0; j < len(p.matrix[i]); j++ {
+			if p.matrix[i][j].tex == nil {
+				// This line is not complete
+				if lines > 0 {
+					p.moveLinesDown(startLine, lines)
+					startLine, lines = 0, 0
+				}
+				continue lineLoop
+			}
+			if j+1 == len(p.matrix[i]) {
+				// This is the last block in the line and it's not empty
+				// the line is complete
+				if lines == 0 {
+					startLine = i
+				}
+				lines++
+			}
+		}
+	}
+	if lines > 0 {
+		p.moveLinesDown(startLine, lines)
+		startLine, lines = 0, 0
+	}
+}
+
+func (p *playfield) mergeTet() {
+	shape := p.tet.shapes[p.tet.rotation]
+	for i := 0; i < len(shape); i++ {
+		for j := 0; j < len(shape[i]); j++ {
+			if shape[i][j] == 1 {
+				p.matrix[int(p.tet.pos.y)+i][int(p.tet.pos.x)+j].tex = p.tet.tex
+			}
+		}
 	}
 }
 
 func (p *playfield) draw(r *sdl.Renderer) {
-	// Draw background
+	// Draw background, any Tet texture would do to calculate the size
 	_, _, tW, tH, err := getTex("blue.png").Query()
 	if err != nil {
 		panic(errors.Wrap(err, "failed to query texture properties"))

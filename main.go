@@ -59,17 +59,7 @@ func main() {
 	blue := getTex("blue.png")
 	defer blue.Destroy()
 
-	pf := playfield{
-		pos: position{
-			x: 7, y: 30,
-		},
-		tet: newTetrimino(tetI),
-	}
-	pf.tet.pos = position{
-		x: 3,
-		y: 0,
-	}
-	pf.tet.rotation = 1
+	pf := newPlayfield(position{x: 7, y: 30})
 
 theLoop:
 	for {

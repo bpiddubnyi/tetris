@@ -1,6 +1,9 @@
 package main
 
 import (
+	"math/rand"
+	"time"
+
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -189,6 +192,10 @@ var (
 	}
 )
 
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
 type shape [][]int8
 
 type tetrimino struct {
@@ -215,4 +222,8 @@ func newTetrimino(t int) *tetrimino {
 		shapes:   &tetShapes[t],
 		rotation: 0,
 	}
+}
+
+func newRandomTet() *tetrimino {
+	return newTetrimino(rand.Intn(len(tetShapes)))
 }
