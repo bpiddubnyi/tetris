@@ -25,11 +25,19 @@ type position struct {
 	x, y int32
 }
 
+type t struct {
+	position
+	shape *tetrimino
+	r     int8
+}
+
+func newT() t {
+	return t{shape: getRandomTetrimino()}
+}
+
 type game struct {
 	playfield  [playfieldHeight][playfieldWidth]int8
-	tet        *tetrimino
-	tetPos     position
-	tetRot     int8
+	t          t
 	latestMove time.Time
 	latestFall time.Time
 	speed      float32
@@ -38,12 +46,12 @@ type game struct {
 func newGame() game {
 	return game{
 		speed: 2,
-		tet:   newRandomTetrimino(),
+		t:     newT(),
 	}
 }
 
 func (g *game) tetMoveIsPossible(pos position, rot int8) bool {
-	shape := g.tet[rot]
+	shape := g.t.shape[g.t.r]
 	for i := 0; i < len(shape); i++ {
 		for j := 0; j < len(shape[i]); j++ {
 			if shape[i][j] > 0 && (int(pos.y)+i < 0 ||
@@ -61,16 +69,16 @@ func (g *game) tetMoveIsPossible(pos position, rot int8) bool {
 func (g *game) moveTet(dir int) bool {
 	switch dir {
 	case dirLeft:
-		if g.tetMoveIsPossible(position{x: g.tetPos.x - 1, y: g.tetPos.y}, g.tetRot) {
-			g.tetPos.x--
+		if g.tetMoveIsPossible(position{x: g.t.x - 1, y: g.t.y}, g.t.r) {
+			g.t.x--
 		}
 	case dirRight:
-		if g.tetMoveIsPossible(position{x: g.tetPos.x + 1, y: g.tetPos.y}, g.tetRot) {
-			g.tetPos.x++
+		if g.tetMoveIsPossible(position{x: g.t.x + 1, y: g.t.y}, g.t.r) {
+			g.t.x++
 		}
 	case dirDown:
-		if g.tetMoveIsPossible(position{x: g.tetPos.x, y: g.tetPos.y + 1}, g.tetRot) {
-			g.tetPos.y++
+		if g.tetMoveIsPossible(position{x: g.t.x, y: g.t.y + 1}, g.t.r) {
+			g.t.y++
 		} else {
 			return false
 		}
@@ -79,12 +87,12 @@ func (g *game) moveTet(dir int) bool {
 }
 
 func (g *game) rotateTet() bool {
-	nR := g.tetRot + 1
+	nR := g.t.r + 1
 	if nR == 4 {
 		nR = 0
 	}
-	if g.tetMoveIsPossible(g.tetPos, nR) {
-		g.tetRot = nR
+	if g.tetMoveIsPossible(g.t.position, nR) {
+		g.t.r = nR
 		return true
 	}
 	return false
@@ -131,11 +139,11 @@ lineLoop:
 }
 
 func (g *game) mergeTet() {
-	shape := g.tet[g.tetRot]
+	shape := g.t.shape[g.t.r]
 	for i := 0; i < len(shape); i++ {
 		for j := 0; j < len(shape[i]); j++ {
 			if shape[i][j] > 0 {
-				g.playfield[int(g.tetPos.y)+i][int(g.tetPos.x)+j] = shape[i][j]
+				g.playfield[int(g.t.y)+i][int(g.t.x)+j] = shape[i][j]
 			}
 		}
 	}
@@ -171,9 +179,7 @@ func (g *game) update() {
 		if !g.moveTet(dirDown) {
 			g.mergeTet()
 			g.clearLines()
-			g.tet = newRandomTetrimino()
-			g.tetPos = position{x: 0, y: 0}
-			g.tetRot = 0
+			g.t = newT()
 		}
 		g.latestFall = time.Now()
 	}
@@ -185,17 +191,17 @@ func (g *game) draw(r *sdl.Renderer, p position, res *resources) {
 	for i := invisiblePlayfieldHeight; i < playfieldHeight; i++ {
 		for j := 0; j < playfieldWidth; j++ {
 			var t int8
-			shape := g.tet[g.tetRot]
+			shape := g.t.shape[g.t.r]
 			if g.playfield[i][j] > 0 {
 				// Draw  block from the matrix
 				t = g.playfield[i][j]
-			} else if j >= int(g.tetPos.x) &&
-				j < int(g.tetPos.x)+len(shape[0]) &&
-				i >= int(g.tetPos.y) &&
-				i < int(g.tetPos.y)+len(shape) &&
-				shape[i-int(g.tetPos.y)][j-int(g.tetPos.x)] > 0 {
+			} else if j >= int(g.t.x) &&
+				j < int(g.t.x)+len(shape[0]) &&
+				i >= int(g.t.y) &&
+				i < int(g.t.y)+len(shape) &&
+				shape[i-int(g.t.y)][j-int(g.t.x)] > 0 {
 				// or from the mapped player's tetrimino
-				t = shape[i-int(g.tetPos.y)][j-int(g.tetPos.x)]
+				t = shape[i-int(g.t.y)][j-int(g.t.x)]
 			}
 
 			r.Copy(res.tex[t],

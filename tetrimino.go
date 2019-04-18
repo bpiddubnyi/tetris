@@ -170,40 +170,14 @@ var (
 	}
 )
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
-
 type tShape [][]int8
 
 type tetrimino [4]tShape
 
-// type tetrimino struct {
-// 	tex      *sdl.Texture
-// 	shapes   *[4]shape
-// 	rotation int8
-// 	pos      position
-// }
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
-// func (r *tetrimino) rotate() {
-// 	r.rotation++
-// 	if r.rotation == 4 {
-// 		r.rotation = 0
-// 	}
-// }
-
-// func (r tetrimino) shape() shape {
-// 	return r.shapes[r.rotation]
-// }
-
-// func newTet(t int) *tetrimino {
-// 	return &tetrimino{
-// 		tex:      getTex(tetTextures[t]),
-// 		shapes:   &tetShapes[t],
-// 		rotation: 0,
-// 	}
-// }
-
-func newRandomTetrimino() *tetrimino {
+func getRandomTetrimino() *tetrimino {
 	return &tetriminos[rand.Intn(len(tetriminos))]
 }
