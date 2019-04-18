@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"time"
 
 	"github.com/veandco/go-sdl2/sdl"
@@ -42,6 +43,7 @@ type game struct {
 	latestFall time.Time
 	speed      float32
 	pause      bool
+	loose      bool
 }
 
 func newGame() game {
@@ -49,6 +51,10 @@ func newGame() game {
 		speed: 2,
 		t:     newT(),
 	}
+}
+
+func (g *game) reset() {
+	*g = newGame()
 }
 
 func (g *game) tetMoveIsPossible(pos position, rot int8) bool {
@@ -154,10 +160,14 @@ func (g *game) update(kbd *kbd) {
 	kbd.poll()
 
 	if kbd.justPressed(sdl.SCANCODE_ESCAPE) {
-		g.pause = !g.pause
+		if !g.loose {
+			g.pause = !g.pause
+		} else {
+			g.reset()
+		}
 	}
 
-	if g.pause {
+	if g.pause || g.loose {
 		return
 	}
 
@@ -192,6 +202,10 @@ func (g *game) update(kbd *kbd) {
 			g.mergeTet()
 			g.clearLines()
 			g.t = newT()
+			if !g.tetMoveIsPossible(g.t.position, 0) {
+				g.loose = true
+				log.Println("you loose")
+			}
 		}
 		g.latestFall = time.Now()
 	}
