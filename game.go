@@ -41,19 +41,18 @@ type game struct {
 	latestMove time.Time
 	latestFall time.Time
 	speed      float32
-	play       bool
+	pause      bool
 }
 
 func newGame() game {
 	return game{
 		speed: 2,
 		t:     newT(),
-		play:  true,
 	}
 }
 
 func (g *game) tetMoveIsPossible(pos position, rot int8) bool {
-	shape := g.t.shape[g.t.r]
+	shape := g.t.shape[rot]
 	for i := 0; i < len(shape); i++ {
 		for j := 0; j < len(shape[i]); j++ {
 			if shape[i][j] > 0 && (int(pos.y)+i < 0 ||
@@ -155,10 +154,10 @@ func (g *game) update(kbd *kbd) {
 	kbd.poll()
 
 	if kbd.justPressed(sdl.SCANCODE_ESCAPE) {
-		g.play = !g.play
+		g.pause = !g.pause
 	}
 
-	if !g.play {
+	if g.pause {
 		return
 	}
 
