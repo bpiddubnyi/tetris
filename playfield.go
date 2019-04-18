@@ -38,28 +38,34 @@ type playfield struct {
 	latestMove time.Time
 }
 
-func (p *playfield) placeTetrimino(t *tetrimino, pos position) bool {
-	shape := t.currentShape()
+func (p *playfield) tetMoveIsPossible(pos position, rot int8) bool {
+	shape := p.tet.shapes[rot]
 	for i := 0; i < len(shape); i++ {
 		for j := 0; j < len(shape[i]); j++ {
-
+			if shape[i][j] == 1 && (int(pos.y)+i < 0 ||
+				int(pos.y)+i >= playfieldHeight ||
+				int(pos.x)+j < 0 ||
+				int(pos.x)+j >= playfieldWidth ||
+				p.matrix[int(pos.y)+i][int(pos.x)+j].tex != nil) {
+				return false
+			}
 		}
 	}
-	return false
+	return true
 }
 
 func (p *playfield) moveTet(dir int) bool {
 	switch dir {
 	case dirLeft:
-		if p.tet.pos.x-1 >= 0 {
+		if p.tetMoveIsPossible(position{x: p.tet.pos.x - 1, y: p.tet.pos.y}, p.tet.rotation) {
 			p.tet.pos.x--
 		}
 	case dirRight:
-		if p.tet.pos.x+int32(len(p.tet.currentShape()[0]))+1 <= playfieldWidth {
+		if p.tetMoveIsPossible(position{x: p.tet.pos.x + 1, y: p.tet.pos.y}, p.tet.rotation) {
 			p.tet.pos.x++
 		}
 	case dirDown:
-		if p.tet.pos.y+int32(len(p.tet.currentShape()))+1 <= playfieldHeight {
+		if p.tetMoveIsPossible(position{x: p.tet.pos.x, y: p.tet.pos.y + 1}, p.tet.rotation) {
 			p.tet.pos.y++
 		}
 	}
@@ -68,14 +74,21 @@ func (p *playfield) moveTet(dir int) bool {
 }
 
 func (p *playfield) rotateTet() bool {
-	p.tet.rotate()
-	return true
+	nR := p.tet.rotation + 1
+	if nR == 4 {
+		nR = 0
+	}
+	if p.tetMoveIsPossible(p.tet.pos, nR) {
+		p.tet.rotation = nR
+		return true
+	}
+	return false
 }
 
 func (p *playfield) update() {
 	if time.Since(p.latestMove) >= moveCooldown {
 		keys := sdl.GetKeyboardState()
-		if keys[sdl.SCANCODE_SPACE] == 1 {
+		if keys[sdl.SCANCODE_SPACE] == 1 || keys[sdl.SCANCODE_UP] == 1 {
 			p.rotateTet()
 			p.latestMove = time.Now()
 		}

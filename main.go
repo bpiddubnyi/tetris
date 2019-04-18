@@ -80,11 +80,6 @@ theLoop:
 			}
 		}
 
-		// Reduce CPU usage
-		if time.Since(lastFrame) < time.Second/targetFPS {
-			time.Sleep(time.Until(lastFrame.Add(time.Second / targetFPS)))
-		}
-
 		if err = rndr.SetDrawColor(255, 255, 255, 255); err != nil {
 			log.Fatalln("error: failed to set draw color:", err)
 		}
@@ -92,6 +87,11 @@ theLoop:
 
 		pf.update()
 		pf.draw(rndr)
+
+		// Reduce CPU usage
+		if time.Since(lastFrame) < time.Second/targetFPS {
+			time.Sleep(time.Until(lastFrame.Add(time.Second / targetFPS)))
+		}
 
 		rndr.Present()
 		lastFrame = time.Now()
