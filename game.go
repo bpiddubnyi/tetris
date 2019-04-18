@@ -120,8 +120,8 @@ func (g *game) update() {
 	if time.Since(g.latestFall) >= time.Duration(float32(tick)*g.speed) {
 		if !g.moveTet(dirDown) {
 			g.mergeTet()
-			g.tet = newRandomTet()
 			g.clearLines()
+			g.tet = newRandomTet()
 		}
 		g.latestFall = time.Now()
 	}
