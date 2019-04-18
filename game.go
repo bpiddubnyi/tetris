@@ -36,11 +36,32 @@ func newT() t {
 	return t{shape: getRandomTetrimino()}
 }
 
+type score struct {
+	lines  int
+	points int
+	level  int
+}
+
+func (s *score) addLines(n int) {
+	s.lines += n
+	switch n {
+	case 1:
+		s.points += 40 * (s.level + 1)
+	case 2:
+		s.points += 100 * (s.level + 1)
+	case 3:
+		s.points += 300 * (s.level + 1)
+	case 4:
+		s.points += 1200 * (s.level + 1)
+	}
+}
+
 type game struct {
 	playfield  [playfieldHeight][playfieldWidth]int8
 	t          t
 	latestMove time.Time
 	latestFall time.Time
+	score      score
 	speed      float32
 	pause      bool
 	loose      bool
@@ -105,13 +126,17 @@ func (g *game) rotateTet() bool {
 	return false
 }
 
-func (g *game) moveLinesDown(start, num int) {
-	copy(g.playfield[num:start+1], g.playfield[0:start-num+1])
-	for i := 0; i < num; i++ {
+func (g *game) collapseAndScore(start, n int) {
+	copy(g.playfield[n:start+1], g.playfield[0:start-n+1])
+	for i := 0; i < n; i++ {
 		for j := 0; j < len(g.playfield[i]); j++ {
 			g.playfield[i][j] = 0
 		}
 	}
+
+	// TODO: Draw this
+	g.score.addLines(n)
+	log.Println("lines:", g.score.lines, "points:", g.score.points)
 }
 
 func (g *game) clearLines() {
@@ -124,7 +149,7 @@ lineLoop:
 			if g.playfield[i][j] == 0 {
 				// This line is not complete
 				if lines > 0 {
-					g.moveLinesDown(startLine, lines)
+					g.collapseAndScore(startLine, lines)
 					startLine, lines = 0, 0
 				}
 				continue lineLoop
@@ -140,8 +165,7 @@ lineLoop:
 		}
 	}
 	if lines > 0 {
-		g.moveLinesDown(startLine, lines)
-		startLine, lines = 0, 0
+		g.collapseAndScore(startLine, lines)
 	}
 }
 
@@ -204,6 +228,7 @@ func (g *game) update(kbd *kbd) {
 			g.t = newT()
 			if !g.tetMoveIsPossible(g.t.position, 0) {
 				g.loose = true
+				// TODO: Draw this
 				log.Println("you loose")
 			}
 		}
