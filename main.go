@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/veandco/go-sdl2/sdl"
+	"github.com/veandco/go-sdl2/ttf"
 )
 
 const (
@@ -27,6 +28,10 @@ func main() {
 	err := sdl.Init(sdl.INIT_EVERYTHING)
 	if err != nil {
 		log.Fatalln("error: failed to init sdl:", err)
+	}
+
+	if err = ttf.Init(); err != nil {
+		log.Fatalln("error: failed to init sdl.ttf:", err)
 	}
 
 	window, err := sdl.CreateWindow(

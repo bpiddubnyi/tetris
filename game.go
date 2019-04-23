@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"time"
 
 	"github.com/veandco/go-sdl2/sdl"
+	"github.com/veandco/go-sdl2/ttf"
 )
 
 const (
@@ -130,9 +132,7 @@ func (g *game) collapseAndScore(start, n int) {
 		}
 	}
 
-	// TODO: Draw this
 	g.score.addLines(n)
-	log.Println("lines:", g.score.lines, "points:", g.score.points)
 }
 
 func (g *game) clearLines() {
@@ -262,4 +262,37 @@ func (g *game) draw(r *sdl.Renderer, p position, res *resources) {
 			}
 		}
 	}
+
+	lines, lH, lW := texFromText(r, res.fnt, fmt.Sprintf("lines: %d", g.score.lines),
+		sdl.Color{R: 255, G: 255, B: 255, A: 255})
+	defer lines.Destroy()
+	if err := r.Copy(lines,
+		&sdl.Rect{X: 0, Y: 0, W: lW, H: lH},
+		&sdl.Rect{X: p.x + playfieldWidth*res.tW + 5, Y: p.y, W: lW, H: lH}); err != nil {
+		panic(err)
+	}
+
+	score, sH, sW := texFromText(r, res.fnt, fmt.Sprintf("score: %d", g.score.points),
+		sdl.Color{R: 255, G: 255, B: 255, A: 255})
+	defer score.Destroy()
+	if err := r.Copy(score,
+		&sdl.Rect{X: 0, Y: 0, W: sW, H: sH},
+		&sdl.Rect{X: p.x + playfieldWidth*res.tW + 5, Y: p.y + lH + 2, W: sW, H: sH}); err != nil {
+		panic(err)
+	}
+}
+
+func texFromText(r *sdl.Renderer, f *ttf.Font, text string, color sdl.Color) (*sdl.Texture, int32, int32) {
+	s, err := f.RenderUTF8Solid(text, color)
+	if err != nil {
+		panic(err)
+	}
+	defer s.Free()
+
+	t, err := r.CreateTextureFromSurface(s)
+	if err != nil {
+		panic(err)
+	}
+
+	return t, s.H, s.W
 }
