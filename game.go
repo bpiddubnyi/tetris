@@ -42,18 +42,15 @@ type score struct {
 	level  int
 }
 
+var (
+	scores = [...]int{
+		40, 100, 300, 1200,
+	}
+)
+
 func (s *score) addLines(n int) {
 	s.lines += n
-	switch n {
-	case 1:
-		s.points += 40 * (s.level + 1)
-	case 2:
-		s.points += 100 * (s.level + 1)
-	case 3:
-		s.points += 300 * (s.level + 1)
-	case 4:
-		s.points += 1200 * (s.level + 1)
-	}
+	s.points += scores[n-1] * (s.level + 1)
 }
 
 type game struct {
