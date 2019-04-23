@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"time"
 
@@ -16,7 +17,13 @@ const (
 	targetFPS = 60
 )
 
+var (
+	debug = flag.Bool("debug", false, "show debug output")
+)
+
 func main() {
+	flag.Parse()
+
 	err := sdl.Init(sdl.INIT_EVERYTHING)
 	if err != nil {
 		log.Fatalln("error: failed to init sdl:", err)
@@ -77,6 +84,13 @@ theLoop:
 		}
 
 		rndr.Present()
+		if *debug && lastFrame.Second() != lastFrameSecond {
+			lastFrameSecond = lastFrame.Second()
+			log.Println("fps:", fps)
+			fps = 0
+		}
+		fps++
+
 		lastFrame = time.Now()
 	}
 }
