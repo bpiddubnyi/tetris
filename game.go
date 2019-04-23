@@ -10,7 +10,6 @@ import (
 const (
 	playfieldHeight          = 26
 	playfieldWidth           = 10
-	playfieldVisibleHeight   = playfieldHeight - invisiblePlayfieldHeight
 	invisiblePlayfieldHeight = 3
 
 	tick = time.Millisecond * 100

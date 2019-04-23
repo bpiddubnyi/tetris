@@ -16,13 +16,12 @@ const (
 	targetFPS = 60
 )
 
-var (
-	texStor   map[string]*sdl.Texture
-	lastFrame time.Time
-)
-
 func main() {
-	sdl.Init(sdl.INIT_EVERYTHING)
+	err := sdl.Init(sdl.INIT_EVERYTHING)
+	if err != nil {
+		log.Fatalln("error: failed to init sdl:", err)
+	}
+
 	window, err := sdl.CreateWindow(
 		windowTitle,
 		sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
@@ -49,6 +48,12 @@ func main() {
 	kbd := kbd{}
 	game := newGame()
 
+	var (
+		lastFrame       time.Time
+		lastFrameSecond = 0
+		fps             = 0
+	)
+
 theLoop:
 	for {
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
@@ -61,7 +66,7 @@ theLoop:
 		if err = rndr.SetDrawColor(0, 0, 0, 255); err != nil {
 			log.Fatalln("error: failed to set draw color:", err)
 		}
-		rndr.Clear()
+		_ = rndr.Clear()
 
 		game.update(&kbd)
 		game.draw(rndr, position{x: 20, y: 30}, res)
