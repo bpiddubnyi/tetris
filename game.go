@@ -251,13 +251,15 @@ func (g *game) draw(r *sdl.Renderer, p position, res *resources) {
 				t = shape[i-int(g.t.y)][j-int(g.t.x)]
 			}
 
-			r.Copy(res.tex[t],
+			if err := r.Copy(res.tex[t],
 				&sdl.Rect{X: 0, Y: 0, W: res.tW, H: res.tH},
 				&sdl.Rect{
 					X: p.x + int32(j)*res.tW,
 					Y: p.y + int32(i-invisiblePlayfieldHeight)*res.tH,
 					W: res.tW, H: res.tH,
-				})
+				}); err != nil {
+				panic(err)
+			}
 		}
 	}
 }
