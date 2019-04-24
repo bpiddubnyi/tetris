@@ -57,6 +57,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("error: failed to load game resources: %s", err)
 	}
+	defer res.free()
+
 	kbd := kbd{}
 	game := newGame()
 
@@ -82,6 +84,7 @@ theLoop:
 
 		game.update(&kbd)
 		game.draw(rndr, position{x: 20, y: 30}, res)
+		game.score.draw(rndr, position{x: 400, y: 30}, res)
 
 		// Reduce CPU usage
 		if time.Since(lastFrame) < time.Second/targetFPS {

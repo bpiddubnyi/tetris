@@ -6,14 +6,13 @@ import (
 
 	"github.com/veandco/go-sdl2/img"
 	"github.com/veandco/go-sdl2/sdl"
-	"github.com/veandco/go-sdl2/ttf"
 )
 
 const (
 	blockNum = 8
 
 	fntName = "Xolonium-Regular.ttf"
-	fntSize = 22
+	fntSize = 24
 )
 
 var (
@@ -31,7 +30,7 @@ var (
 
 type resources struct {
 	tex    [blockNum]*sdl.Texture
-	fnt    *ttf.Font
+	font   *font
 	tW, tH int32
 }
 
@@ -68,10 +67,17 @@ func loadGameResources(r *sdl.Renderer) (*resources, error) {
 	res.tW = tW
 	res.tH = tH
 
-	res.fnt, err = ttf.OpenFont(assetPath(fntName), fntSize)
+	res.font, err = newFont(fntName, fntSize, sdl.Color{R: 255, G: 255, B: 255, A: 255})
 	if err != nil {
 		return nil, fmt.Errorf("failed to open font: %s", err)
 	}
 
 	return &res, nil
+}
+
+func (r *resources) free() {
+	for _, t := range r.tex {
+		_ = t.Destroy()
+	}
+	r.font.free()
 }
