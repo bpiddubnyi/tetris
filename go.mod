@@ -1,5 +1,5 @@
 module git.zhu.org.ua/zhu/Tetris
 
-go 1.12
+go 1.13
 
-require github.com/veandco/go-sdl2 v0.3.0
+require github.com/veandco/go-sdl2 v0.3.3
