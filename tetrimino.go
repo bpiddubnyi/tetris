@@ -8,7 +8,7 @@ import (
 var (
 	tetriminos = [...]tetrimino{
 		// 0, I, cyan
-		tetrimino{
+		{
 			{
 				{0, 0, 0, 0},
 				{1, 1, 1, 1},
@@ -35,7 +35,7 @@ var (
 			},
 		},
 		// 1, J, blue
-		tetrimino{
+		{
 			{
 				{2, 0, 0},
 				{2, 2, 2},
@@ -58,7 +58,7 @@ var (
 			},
 		},
 		// 2, L, orange
-		tetrimino{
+		{
 			{
 				{0, 0, 3},
 				{3, 3, 3},
@@ -81,7 +81,7 @@ var (
 			},
 		},
 		// 3, O, square, yellow
-		tetrimino{
+		{
 			{
 				{0, 4, 4, 0},
 				{0, 4, 4, 0},
@@ -100,7 +100,7 @@ var (
 			},
 		},
 		// 4, S, green
-		tetrimino{
+		{
 			{
 				{0, 5, 5},
 				{5, 5, 0},
@@ -122,7 +122,7 @@ var (
 			},
 		},
 		// 5, T, magenta
-		tetrimino{
+		{
 			{
 				{0, 6, 0},
 				{6, 6, 6},
@@ -145,7 +145,7 @@ var (
 			},
 		},
 		// 6, Z, red
-		tetrimino{
+		{
 			{
 				{7, 7, 0},
 				{0, 7, 7},
